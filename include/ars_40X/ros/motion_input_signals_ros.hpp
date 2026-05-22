@@ -5,8 +5,9 @@
 #ifndef ARS_40X_MOTION_INPUT_SIGNALS_ROS_HPP
 #define ARS_40X_MOTION_INPUT_SIGNALS_ROS_HPP
 
-#include <ros/ros.h>
-#include <nav_msgs/Odometry.h>
+// #include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 
 #include <cstdint>
 
@@ -15,12 +16,13 @@
 namespace ars_40X {
 class MotionInputSignalsROS {
  public:
-  MotionInputSignalsROS(ros::NodeHandle &nh, ARS_40X_CAN *ars_40X_can);
+  MotionInputSignalsROS(rclcpp::Node& nh, ARS_40X_CAN *ars_40X_can, std::string port_id);
 
   ~MotionInputSignalsROS();
 
  private:
-  void odom_callback(nav_msgs::Odometry msg);
+ rclcpp::Node& node_;
+ void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg);
 
   ARS_40X_CAN *ars_40X_can_;
 
@@ -28,7 +30,7 @@ class MotionInputSignalsROS {
 
   motion_input_signals::YawRateInformation *yaw_rate_information_;
 
-  ros::Subscriber odom_sub_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
 };
 }
 

@@ -4,27 +4,33 @@
 
 #include "ars_40X/ros/ars_40X_ros.hpp"
 
+#include <iostream>
+
 namespace ars_40X {
-ARS_40X_ROS::ARS_40X_ROS(ros::NodeHandle &nh) :
-    nh_(nh),
-    cluster_list_ros_(nh_, this),
-    motion_input_signals_ros_(nh_, this),
-    object_list_ros_(nh_, this),
-    radar_cfg_ros_(nh_, this),
-    radar_state_ros_(nh_, this) {
-  ros::NodeHandle private_nh("~");
-  std::string frame_id;
-  private_nh.param<std::string>("frame_id", frame_id, std::string("radar"));
+ARS_40X_ROS::ARS_40X_ROS(std::string port) :
+    ARS_40X_CAN(port),
+    Node("ARS_40X_ROS"),
+    cluster_list_ros_(*this, this, port),
+    motion_input_signals_ros_(*this, this, port),
+    object_list_ros_(*this, this, port),
+    radar_cfg_ros_(*this, this, port),
+    radar_state_ros_(*this, this, port) {
+  std::string frame_id = "ARS40X";  //"radar";
   cluster_list_ros_.set_frame_id(frame_id);
   object_list_ros_.set_frame_id(frame_id);
+  receive_data_thread_ = std::thread(std::bind(&ARS_40X_ROS::receive_data, this));
+  receive_data_thread_.detach();
 }
 
 ARS_40X_ROS::~ARS_40X_ROS() {
 }
 
 void ARS_40X_ROS::receive_data() {
-  while (ros::ok()) {
-    receive_radar_data();
+  while (rclcpp::ok()) {
+    if(!receive_radar_data())
+    {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    };
   }
 }
 
@@ -67,9 +73,20 @@ void ARS_40X_ROS::run() {
 }
 
 int main(int argc, char **argv) {
-  ros::init(argc, argv, "ars_40X_ros");
-  ros::NodeHandle nh;
-  ars_40X::ARS_40X_ROS ars_40X_ros_(nh);
-  ars_40X_ros_.run();
-  ros::spin();
+
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <port_id>" << std::endl;
+    return 1;
+  }
+
+  std::string port = argv[1];
+  rclcpp::init(argc, argv);
+  auto node = std::make_shared<ars_40X::ARS_40X_ROS>(port);
+  rclcpp::spin(node);
+  rclcpp::shutdown();
+  // ros::init(argc, argv, "ars_40X_ros");
+  // ros::NodeHandle nh;
+  // ars_40X::ARS_40X_ROS ars_40X_ros_(nh);
+  // ars_40X_ros_.run();
+  // ros::spin();
 }

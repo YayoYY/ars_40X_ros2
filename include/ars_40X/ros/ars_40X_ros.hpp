@@ -5,7 +5,8 @@
 #ifndef ARS_40X_ARS_40X_ROS_HPP
 #define ARS_40X_ARS_40X_ROS_HPP
 
-#include <ros/ros.h>
+// #include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <thread>
 
 #include "ars_40X/ros/cluster_list_ros.hpp"
@@ -17,9 +18,9 @@
 #include "ars_40X/ars_40X_can.hpp"
 
 namespace ars_40X {
-class ARS_40X_ROS : public ARS_40X_CAN {
+class ARS_40X_ROS : public ARS_40X_CAN, public rclcpp::Node {
  public:
-  ARS_40X_ROS(ros::NodeHandle &nh);
+  ARS_40X_ROS(std::string port);
 
   ~ARS_40X_ROS();
 
@@ -44,7 +45,6 @@ class ARS_40X_ROS : public ARS_40X_CAN {
   void send_radar_state();
 
  private:
-  ros::NodeHandle nh_;
 
   std::thread receive_data_thread_;
 

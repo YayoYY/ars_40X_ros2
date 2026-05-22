@@ -5,18 +5,21 @@
 #ifndef ARS_40X_CLUSTER_LIST_ROS_HPP
 #define ARS_40X_CLUSTER_LIST_ROS_HPP
 
-#include <ros/ros.h>
+// #include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <cstdint>
+#include <cstddef>
 
-#include "ars_40X/ClusterList.h"
+// #include "ars_40X/ClusterList.h"
+#include "perception_ros2_msgs/msg/cluster_list.hpp"
 #include "ars_40X/ars_40X_can.hpp"
 
 namespace ars_40X {
-class ClusterListROS {
+class ClusterListROS{
  public:
-  ClusterListROS(
-      ros::NodeHandle &nh, ARS_40X_CAN *ars_40X_can);
+  ClusterListROS(rclcpp::Node& nh, ARS_40X_CAN *ars_40X_can, std::string port_id);
+      // ros::NodeHandle &nh, ARS_40X_CAN *ars_40X_can);
 
   ~ClusterListROS();
 
@@ -29,11 +32,12 @@ class ClusterListROS {
   void send_cluster_2_quality();
 
  private:
+  rclcpp::Node& node_;
   std::string frame_id_;
 
-  ros::Publisher clusters_data_pub_;
+  rclcpp::Publisher<perception_ros2_msgs::msg::ClusterList>::SharedPtr clusters_data_pub_;
 
-  ClusterList cluster_list;
+  perception_ros2_msgs::msg::ClusterList cluster_list;
 
   cluster_list::Cluster_0_Status *cluster_0_status_;
 
@@ -43,7 +47,7 @@ class ClusterListROS {
 
   ARS_40X_CAN *ars_40X_can_;
 
-  int cluster_id_;
+  std::size_t cluster_id_;
 };
 }
 

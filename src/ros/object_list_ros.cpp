@@ -4,17 +4,20 @@
 
 #include "ars_40X/ros/object_list_ros.hpp"
 
-#include <geometry_msgs/Quaternion.h>
+#include <algorithm>
+
+#include <geometry_msgs/msg/quaternion.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 namespace ars_40X {
-ObjectListROS::ObjectListROS(ros::NodeHandle &nh, ARS_40X_CAN *ars_40X_can) :
-    ars_40X_can_(ars_40X_can) {
+ObjectListROS::ObjectListROS(rclcpp::Node& nh, ARS_40X_CAN *ars_40X_can, std::string port_id) :
+  node_(nh), ars_40X_can_(ars_40X_can) {
   object_0_status_ = ars_40X_can_->get_object_0_status();
   object_1_general_ = ars_40X_can_->get_object_1_general();
   object_2_quality_ = ars_40X_can_->get_object_2_quality();
   object_3_extended_ = ars_40X_can_->get_object_3_extended();
-  objects_data_pub_ = nh.advertise<ars_40X::ObjectList>("ars_40X/objects", 10);
+  objects_data_pub_ = node_.create_publisher<perception_ros2_msgs::msg::ObjectList>("ars_40X/objects" + port_id, 10);
+  // objects_data_pub_ = nh.advertise<perception_ros2_msgs::msg::ObjectList>("ars_40X/objects", 10);
 }
 
 ObjectListROS::~ObjectListROS() {
@@ -25,19 +28,21 @@ void ObjectListROS::set_frame_id(std::string frame_id) {
 }
 
 void ObjectListROS::send_object_0_status() {
-  object_list.header.stamp = ros::Time::now();
+  object_list.header.stamp = rclcpp::Clock().now();
   object_list.header.frame_id = frame_id_;
+  const auto complete_objects = std::min(object_2_quality_id_, object_3_extended_id_);
+  const auto erase_from = std::min(complete_objects, object_list.objects.size());
   object_list.objects.erase(
-      object_list.objects.begin() + std::min(object_2_quality_id_, object_3_extended_id_),
+      object_list.objects.begin() + erase_from,
       object_list.objects.begin() + object_list.objects.size());
-  objects_data_pub_.publish(object_list);
+  objects_data_pub_->publish(object_list);
   object_list.objects.clear();
   object_2_quality_id_ = 0;
   object_3_extended_id_ = 0;
 }
 
 void ObjectListROS::send_object_1_general() {
-  Object object;
+  perception_ros2_msgs::msg::Object object;
   object.id = object_1_general_->get_object_id();
   object.position.pose.position.x = object_1_general_->get_object_long_dist();
   object.position.pose.position.y = object_1_general_->get_object_lat_dist();
@@ -49,6 +54,10 @@ void ObjectListROS::send_object_1_general() {
 }
 
 void ObjectListROS::send_object_2_quality() {
+  if (object_2_quality_id_ >= object_list.objects.size()) {
+    return;
+  }
+
   object_list.objects[object_2_quality_id_].position.covariance[0] =
       pow(object_2_quality_->get_object_lat_dist_rms(), 2);
   object_list.objects[object_2_quality_id_].position.covariance[7] =
@@ -70,6 +79,10 @@ void ObjectListROS::send_object_2_quality() {
 }
 
 void ObjectListROS::send_object_3_extended() {
+  if (object_3_extended_id_ >= object_list.objects.size()) {
+    return;
+  }
+
   object_list.objects[object_3_extended_id_].length = object_3_extended_->get_object_length();
   object_list.objects[object_3_extended_id_].width = object_3_extended_->get_object_width();
   tf2::Quaternion q;

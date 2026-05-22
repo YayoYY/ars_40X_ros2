@@ -5,17 +5,17 @@
 #include "ars_40X/ros/radar_state_ros.hpp"
 
 namespace ars_40X {
-RadarStateROS::RadarStateROS(ros::NodeHandle &nh, ARS_40X_CAN *ars_40X_can) :
-    ars_40X_can_(ars_40X_can) {
+RadarStateROS::RadarStateROS(rclcpp::Node& nh, ARS_40X_CAN *ars_40X_can, std::string port_id) :
+    node_(nh), ars_40X_can_(ars_40X_can) {
   radar_state_ = ars_40X_can->get_radar_state();
-  radar_state_pub_ = nh.advertise<RadarStatus>("radar_status", 1);
+  radar_state_pub_ = node_.create_publisher<perception_ros2_msgs::msg::RadarStatus>("radar_status" + port_id, 1);
 }
 
 RadarStateROS::~RadarStateROS() {
 }
 
 void RadarStateROS::send_radar_state() {
-  RadarStatus radar_status_msg;
+  perception_ros2_msgs::msg::RadarStatus radar_status_msg;
   radar_status_msg.read_status = radar_state_->get_read_status();
   radar_status_msg.write_status = radar_state_->get_write_status();
   radar_status_msg.max_distance = radar_state_->get_max_distance();
@@ -33,6 +33,6 @@ void RadarStateROS::send_radar_state() {
   radar_status_msg.send_ext_info_cfg = radar_state_->get_ext_info_cfg();
   radar_status_msg.motion_rx_state = radar_state_->get_motion_rx_state();
   radar_status_msg.rcs_threshold = radar_state_->get_rcs_threshold();
-  radar_state_pub_.publish(radar_status_msg);
+  radar_state_pub_->publish(radar_status_msg);
 }
 }

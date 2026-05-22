@@ -1,3 +1,3 @@
 std_msgs/Header header
 
-ars_40X/Object[] objects
+ars_radar/Object[] objects

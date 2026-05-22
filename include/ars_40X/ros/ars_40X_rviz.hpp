@@ -5,8 +5,14 @@
 #ifndef ARS_40X_ARS_40X_RVIZ_HPP
 #define ARS_40X_ARS_40X_RVIZ_HPP
 
-#include <ros/ros.h>
+// #include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
+#include <visualization_msgs/msg/marker.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+#include "perception_ros2_msgs/msg/object_list.hpp"
+#include "perception_ros2_msgs/msg/cluster_list.hpp"
 namespace ars_40X {
 enum {
   POINT,
@@ -30,26 +36,26 @@ enum {
   PERCENT_100
 };
 
-class ContinentalRadarRViz {
+class ContinentalRadarRViz  : public rclcpp::Node{
  public:
   ContinentalRadarRViz();
 
   ~ContinentalRadarRViz();
 
  private:
-  void clusters_callback(ars_40X::ClusterList cluster_list);
+  void clusters_callback(perception_ros2_msgs::msg::ClusterList::SharedPtr cluster_list);
 
-  void objects_callback(ars_40X::ObjectList object_list);
+  void objects_callback(perception_ros2_msgs::msg::ObjectList::SharedPtr object_list);
 
-  ros::Publisher clusters_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr clusters_pub_;
 
-  ros::Publisher objects_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr objects_pub_;
 
-  ros::Publisher velocity_pub_;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr velocity_pub_;
 
-  ros::Subscriber clusters_sub_;
+  rclcpp::Subscription<perception_ros2_msgs::msg::ClusterList>::SharedPtr clusters_sub_;
 
-  ros::Subscriber objects_sub_;
+  rclcpp::Subscription<perception_ros2_msgs::msg::ObjectList>::SharedPtr objects_sub_;
 };
 }
 
